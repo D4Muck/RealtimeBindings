@@ -2,11 +2,24 @@ use_frameworks!
 
 target 'RealtimeBindings_Example' do
   pod 'RealtimeBindings', :path => '../'
+  pod 'M13Checkbox', '3.1.3'
+  pod 'BEMCheckBox', '1.4.1'
 
   target 'RealtimeBindings_Tests' do
     inherit! :search_paths
 
     pod 'Quick', '~> 1.0.0'
-  pod 'Nimble', '~> 5.1.1'
+    pod 'Nimble', '~> 5.1.1'
+    pod 'RxBlocking', '4.0.0-beta.0'
+  end
+  
+  post_install do |installer|
+      installer.pods_project.targets.each do |target|
+          if ['Quick', 'Nimble', 'M13Checkbox'].include? target.name
+              target.build_configurations.each do |config|
+                  config.build_settings['SWIFT_VERSION'] = '3.2'
+              end
+          end
+      end
   end
 end
