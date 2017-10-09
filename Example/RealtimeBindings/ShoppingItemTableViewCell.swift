@@ -22,10 +22,18 @@ class ShoppingItemTableViewCell: UITableViewCell {
         didSet {
             disposeBag = DisposeBag()
 
-            item.name.asObservable().bind(to: label.rx.text).disposed(by: disposeBag)
-            item.bought.asObservable().debug().bind(to: checkbox.rx.checkState).disposed(by: disposeBag)
+            item.name.asDriver().drive(label.rx.text).disposed(by: disposeBag)
 
-            checkbox.rx.checkState.asDriver().debug().drive(item.bought).disposed(by: disposeBag)
+            let bought = item.bought.asDriver()
+            bought.drive(checkbox.rx.checkState).disposed(by: disposeBag)
+
+            bought.drive(onNext: { [weak self] bought in
+                self?.backgroundColor = bought ? UIColor.lightGray : nil
+            }).disposed(by: disposeBag)
+
+            self.backgroundColor = .lightGray
+
+            checkbox.rx.checkState.asDriver().drive(item.bought).disposed(by: disposeBag)
         }
     }
 }

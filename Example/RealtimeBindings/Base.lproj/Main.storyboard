@@ -31,7 +31,6 @@
                                             <subviews>
                                                 <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="M3n-4T-Tzq" customClass="M13Checkbox" customModule="M13Checkbox">
                                                     <rect key="frame" x="325" y="10" width="40" height="40"/>
-                                                    <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                                     <constraints>
                                                         <constraint firstAttribute="height" constant="40" id="4bZ-5Z-d4U"/>
                                                         <constraint firstAttribute="width" constant="40" id="TOA-Wr-LSH"/>

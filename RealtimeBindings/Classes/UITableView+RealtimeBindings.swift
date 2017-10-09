@@ -23,39 +23,41 @@ extension UITableView {
                 .map { (str: String) -> Change<T> in
                     return try! JSONDecoder().decode(Change<T>.self, from: str.data(using: .utf8)!)
                 }
-                .scan([]) { (arr: [V], elem: Change<T>) -> [V] in
+                .scan([]) { (arr: [V], element: Change<T>) -> [V] in
 
-                    var mutable = arr
+                    var elements = arr
 
                     let clazz = UITableView.self
 
-                    switch elem.event {
+                    switch element.event {
                     case .CREATED:
-                        mutable.append(clazz.createViewModel(from: elem, disposedBy: compositeDisposable))
+                        elements.append(clazz.createViewModel(from: element, disposedBy: compositeDisposable))
                     case .INITIAL:
-                        mutable.append(clazz.createViewModel(from: elem, disposedBy: compositeDisposable))
+                        elements.append(clazz.createViewModel(from: element, disposedBy: compositeDisposable))
 
                     case .DELETED:
-                        mutable = mutable.filter {
-                            $0.identifier != elem.value.identifier
+                        elements = elements.filter {
+                            $0.identifier != element.value.identifier
                         }
 
                     case .UPDATED:
-                        mutable = mutable.map {
-                            if ($0.identifier == elem.value.identifier) {
-                                return clazz.createViewModel(from: elem, disposedBy: compositeDisposable)
+                        elements = elements.map {
+                            if ($0.identifier == element.value.identifier) {
+                                return clazz.createViewModel(from: element, disposedBy: compositeDisposable)
                             } else {
                                 return $0
                             }
                         }
                     }
-                    return mutable
+                    return elements
                 }
                 .map { arr -> [V] in
                     guard let sortBy = sortBy else { return arr }
                     return arr.sorted(by: sortBy)
                 }
-        let disposable = data.bind(to: self.rx.items, curriedArgument: cellFactory)
+
+        let dataSource = RxTableViewReactiveArrayDataSource<Array<V>>(cellFactory: cellFactory)
+        let disposable = data.bind(to: self.rx.items(dataSource: dataSource))
         _ = compositeDisposable.insert(disposable)
         return compositeDisposable
     }
@@ -64,10 +66,9 @@ extension UITableView {
         let viewModel = V.init(fromElement: element.value)
 
         let disposable = viewModel.updatedElements.debug()
-                .flatMapLatest{
-                    sendDataToServer(value: $0)
+                .flatMapLatest {
+                    sendDataToServer(value: $0).debug().catchError { _ in Single.just(()) }
                 }
-                .debug()
                 .subscribe()
         _ = disposedBy.insert(disposable)
 

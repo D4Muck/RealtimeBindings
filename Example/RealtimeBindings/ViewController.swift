@@ -22,7 +22,7 @@ class ViewController: UIViewController {
         // Do any additional setup after loading the view, typically from a nib.
 
         tableView.observeChangesFrom(url: "http://localhost:8081/shoppingItem/changes"
-                , sortBy: { $0.name.value < $1.name.value }
+                , sortBy: { $1.bought.value }
         )
         { (tableView, row, element: ShoppingItemViewModel) in
             let cell = tableView.dequeueReusableCell(withIdentifier: "Cell") as! ShoppingItemTableViewCell
