@@ -4,11 +4,12 @@
 
 import RxSwift
 import RxCocoa
+import RxDataSources
 
 extension UITableView {
 
-    public typealias Item = Codable & Identifyable
-    public typealias ViewModel = ViewModelType & Identifyable
+    public typealias Item = Codable & IdentifiableType
+    public typealias ViewModel = ViewModelType & IdentifiableType & Equatable
 
     public func observeChangesFrom<T:Item, V:ViewModel>(
             url: String,
@@ -37,12 +38,12 @@ extension UITableView {
 
                     case .DELETED:
                         elements = elements.filter {
-                            $0.identifier != element.value.identifier
+                            $0.identity.hashValue != element.value.identity.hashValue
                         }
 
                     case .UPDATED:
                         elements = elements.map {
-                            if ($0.identifier == element.value.identifier) {
+                            if ($0.identity.hashValue == element.value.identity.hashValue) {
                                 return clazz.createViewModel(from: element, disposedBy: compositeDisposable)
                             } else {
                                 return $0
@@ -55,8 +56,13 @@ extension UITableView {
                     guard let sortBy = sortBy else { return arr }
                     return arr.sorted(by: sortBy)
                 }
+                .map { [SectionOfCustomData(items: $0)] }
 
-        let dataSource = RxTableViewReactiveArrayDataSource<Array<V>>(cellFactory: cellFactory)
+        let dataSource = RxTableViewSectionedAnimatedDataSource<SectionOfCustomData<V>>(configureCell: {
+            (_, tableView, indexPath, element: V) -> UITableViewCell in
+            return cellFactory(tableView, indexPath.row, element)
+        })
+
         let disposable = data.bind(to: self.rx.items(dataSource: dataSource))
         _ = compositeDisposable.insert(disposable)
         return compositeDisposable
@@ -73,6 +79,24 @@ extension UITableView {
         _ = disposedBy.insert(disposable)
 
         return viewModel
+    }
+}
+
+struct SectionOfCustomData<I:IdentifiableType & Equatable> {
+    var items: [I]
+}
+
+extension SectionOfCustomData: AnimatableSectionModelType {
+
+    init(original: SectionOfCustomData, items: [I]) {
+        self = original
+        self.items = items
+    }
+}
+
+extension SectionOfCustomData: IdentifiableType {
+    var identity: Int {
+        return 1
     }
 }
 

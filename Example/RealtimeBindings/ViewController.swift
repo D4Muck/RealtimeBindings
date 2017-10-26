@@ -10,6 +10,7 @@ import UIKit
 import RealtimeBindings
 import RxCocoa
 import RxSwift
+import RxDataSources
 
 class ViewController: UIViewController {
 
@@ -24,7 +25,7 @@ class ViewController: UIViewController {
         tableView.observeChangesFrom(url: "http://localhost:8081/shoppingItem/changes"
                 , sortBy: { $1.bought.value }
         )
-        { (tableView, row, element: ShoppingItemViewModel) in
+        { (tableView: UITableView, row: Int, element: ShoppingItemViewModel) -> UITableViewCell in
             let cell = tableView.dequeueReusableCell(withIdentifier: "Cell") as! ShoppingItemTableViewCell
             cell.item = element
             return cell
@@ -39,8 +40,7 @@ class ViewController: UIViewController {
 }
 
 
-
-struct ShoppingItemViewModel: ViewModelType, Identifyable, CustomStringConvertible {
+struct ShoppingItemViewModel: ViewModelType {
 
     let id: Variable<String>
     let name: Variable<String>
@@ -58,17 +58,31 @@ struct ShoppingItemViewModel: ViewModelType, Identifyable, CustomStringConvertib
                 bought.asObservable().distinctUntilChanged()
         ) { (id, name, bought) in ShoppingItem(id: id, name: name, bought: bought) }.skip(1)
     }
+}
 
-    var identifier: String {
-        return id.value
-    }
+extension ShoppingItemViewModel: CustomStringConvertible {
 
     var description: String {
         return name.value
     }
 }
 
-struct ShoppingItem: Codable, CustomStringConvertible, Identifyable {
+extension ShoppingItemViewModel: IdentifiableType {
+
+    var identity: String {
+        return id.value
+    }
+}
+
+extension ShoppingItemViewModel: Equatable {
+    static func ==(lhs: ShoppingItemViewModel, rhs: ShoppingItemViewModel) -> Bool {
+        return lhs.id == rhs.id
+                && lhs.name == rhs.name
+                && lhs.bought == rhs.bought
+    }
+}
+
+struct ShoppingItem: Codable, CustomStringConvertible, IdentifiableType {
     var id: String
     var name: String
     var bought: Bool
@@ -77,9 +91,16 @@ struct ShoppingItem: Codable, CustomStringConvertible, Identifyable {
         return "\(name), Schon gekauft: \(bought)"
     }
 
-    var identifier: String {
+    var identity: String {
         return id
     }
 }
 
+extension ShoppingItem: Equatable {
+    static func ==(lhs: ShoppingItem, rhs: ShoppingItem) -> Bool {
+        return lhs.id == rhs.id
+                && lhs.name == rhs.name
+                && lhs.bought == rhs.bought
+    }
+}
 

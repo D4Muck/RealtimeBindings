@@ -10,7 +10,7 @@ target 'RealtimeBindings_Example' do
 
     pod 'Quick', '~> 1.0.0'
     pod 'Nimble', '~> 5.1.1'
-    pod 'RxBlocking', '4.0.0-beta.0'
+    pod 'RxBlocking', '~> 4.0'
   end
   
   post_install do |installer|
