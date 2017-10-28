@@ -72,14 +72,11 @@ extension SSEURLSession: URLSessionDataDelegate {
             parser?.onError(e)
         } else {
             print("Everything is dandy!")
-            parser?.onComplete()
+            parser?.onCompleted()
         }
     }
 
     public func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
-        print(parsers[dataTask])
-        print(parsers)
-        print("Got data")
         parsers[dataTask]?.on(data: data)
     }
 

@@ -21,7 +21,7 @@ class SSEParserTests: QuickSpec {
                 strings.forEach {
                     sse.on(data: $0.data(using: .utf8)!)
                 }
-                sse.onComplete()
+                sse.onCompleted()
                 return try! replay.toBlocking().toArray()
             }
 

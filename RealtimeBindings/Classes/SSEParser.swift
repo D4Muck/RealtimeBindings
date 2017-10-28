@@ -7,37 +7,29 @@ import RxSwift
 
 public class SSEParser: ObservableType {
 
+    let subject = PublishSubject<String>()
+
     public init() {
     }
 
     public typealias E = String
 
-    private var observers: [AnyObserver<String>] = []
-
     private var buffer = Data()
 
     public func subscribe<O:ObserverType>(_ observer: O) -> Disposable where O.E == E {
-        let anyObserver = observer.asObserver()
-        observers.append(anyObserver)
-        return Disposables.create()
+        return subject.subscribe(observer)
     }
 
-    public func onComplete() {
-        observers.forEach {
-            $0.onCompleted()
-        }
+    public func onCompleted() {
+        subject.onCompleted()
     }
 
-    public func onError(_ error:Error) {
-        observers.forEach {
-            $0.onError(error)
-        }
+    public func onError(_ error: Error) {
+        subject.onError(error)
     }
-    
+
     private func onNext(value: String) {
-        observers.forEach {
-            $0.onNext(value)
-        }
+        subject.onNext(value)
     }
 
     public func on(data: Data) {

@@ -4,7 +4,7 @@
         <adaptation id="fullscreen"/>
     </device>
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="13173"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="13174"/>
         <capability name="Constraints to layout margins" minToolsVersion="6.0"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
@@ -70,8 +70,11 @@
                         </constraints>
                         <viewLayoutGuide key="safeArea" id="nGz-lc-5rL"/>
                     </view>
-                    <navigationItem key="navigationItem" title="Einkaufsliste" id="z3W-NF-Pxf"/>
+                    <navigationItem key="navigationItem" title="Einkaufsliste" id="z3W-NF-Pxf">
+                        <barButtonItem key="rightBarButtonItem" systemItem="add" id="y8u-Dd-nDI"/>
+                    </navigationItem>
                     <connections>
+                        <outlet property="addButton" destination="y8u-Dd-nDI" id="h6r-5C-gUz"/>
                         <outlet property="tableView" destination="tEd-oe-okO" id="7OQ-0x-96E"/>
                     </connections>
                 </viewController>

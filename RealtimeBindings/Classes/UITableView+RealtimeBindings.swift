@@ -6,75 +6,59 @@ import RxSwift
 import RxCocoa
 import RxDataSources
 
+typealias RxIdentifiableType = RxDataSources.IdentifiableType
+
+public protocol IdentifiableType {
+
+    var id: String { get }
+}
+
 extension UITableView {
 
-    public typealias Item = Codable & IdentifiableType
     public typealias ViewModel = ViewModelType & IdentifiableType & Equatable
 
-    public func observeChangesFrom<T:Item, V:ViewModel>(
-            url: String,
-            sortBy: ((V, V) -> Bool)? = nil,
+    public func observeChangesFrom<T, V:ViewModel>(
+            dataSource: RealtimeDataSource<T>,
+            sortBy: ((T, T) -> Bool)? = nil,
             cellFactory: @escaping (UITableView, Int, V) -> UITableViewCell
     ) -> Disposable where V.T == T {
 
         let compositeDisposable = CompositeDisposable()
-
-        let data = SSEURLSession.instance.request(url: url)
-                .do(onNext: { print($0) })
-                .map { (str: String) -> Change<T> in
-                    return try! JSONDecoder().decode(Change<T>.self, from: str.data(using: .utf8)!)
-                }
-                .scan([]) { (arr: [V], element: Change<T>) -> [V] in
-
-                    var elements = arr
-
-                    let clazz = UITableView.self
-
-                    switch element.event {
-                    case .CREATED:
-                        elements.append(clazz.createViewModel(from: element, disposedBy: compositeDisposable))
-                    case .INITIAL:
-                        elements.append(clazz.createViewModel(from: element, disposedBy: compositeDisposable))
-
-                    case .DELETED:
-                        elements = elements.filter {
-                            $0.identity.hashValue != element.value.identity.hashValue
-                        }
-
-                    case .UPDATED:
-                        elements = elements.map {
-                            if ($0.identity.hashValue == element.value.identity.hashValue) {
-                                return clazz.createViewModel(from: element, disposedBy: compositeDisposable)
-                            } else {
-                                return $0
-                            }
-                        }
+        let data = dataSource.changes(sortBy: sortBy)
+                .map { items -> [SectionOfCustomData<RxDataIdentifiableDelegate<V>>] in
+                    let viewModels = items.map { element -> RxDataIdentifiableDelegate<V> in
+                        let viewModel: V = UITableView.createViewModel(from: element,
+                                sendDataFunc: dataSource.saveElement,
+                                disposedBy: compositeDisposable)
+                        return RxDataIdentifiableDelegate(element: viewModel)
                     }
-                    return elements
+                    return [SectionOfCustomData(items: viewModels)]
                 }
-                .map { arr -> [V] in
-                    guard let sortBy = sortBy else { return arr }
-                    return arr.sorted(by: sortBy)
-                }
-                .map { [SectionOfCustomData(items: $0)] }
 
-        let dataSource = RxTableViewSectionedAnimatedDataSource<SectionOfCustomData<V>>(configureCell: {
-            (_, tableView, indexPath, element: V) -> UITableViewCell in
-            return cellFactory(tableView, indexPath.row, element)
-        })
+        let dataSource = RxTableViewSectionedAnimatedDataSource<SectionOfCustomData<RxDataIdentifiableDelegate<V>>>(configureCell: {
+            (_, tableView, indexPath, elementDelegate: RxDataIdentifiableDelegate<V>) -> UITableViewCell in
+            return cellFactory(tableView, indexPath.row, elementDelegate.element)
+        }, canEditRowAtIndexPath: { _, _ in true })
+
 
         let disposable = data.bind(to: self.rx.items(dataSource: dataSource))
         _ = compositeDisposable.insert(disposable)
+
         return compositeDisposable
     }
+}
 
-    private static func createViewModel<T:Encodable, V:ViewModel>(from element: Change<T>, disposedBy: CompositeDisposable) -> V where V.T == T {
-        let viewModel = V.init(fromElement: element.value)
+private extension UITableView {
 
-        let disposable = viewModel.updatedElements.debug()
-                .flatMapLatest {
-                    sendDataToServer(value: $0).debug().catchError { _ in Single.just(()) }
-                }
+    class func createViewModel<T:Encodable, V:ViewModel>(
+            from element: T,
+            sendDataFunc: @escaping (T) -> Single<Void>,
+            disposedBy: CompositeDisposable
+    ) -> V where V.T == T {
+        let viewModel = V.init(fromElement: element)
+
+        let disposable = viewModel.updatedElements
+                .flatMapLatest { sendDataFunc($0).catchError { _ in Single.just(()) } }
                 .subscribe()
         _ = disposedBy.insert(disposable)
 
@@ -82,7 +66,20 @@ extension UITableView {
     }
 }
 
-struct SectionOfCustomData<I:IdentifiableType & Equatable> {
+struct RxDataIdentifiableDelegate<T:IdentifiableType & Equatable>: RxIdentifiableType, Equatable {
+
+    let element: T
+
+    var identity: String {
+        return element.id
+    }
+
+    static func ==(lhs: RxDataIdentifiableDelegate<T>, rhs: RxDataIdentifiableDelegate<T>) -> Bool {
+        return lhs.element == rhs.element
+    }
+}
+
+struct SectionOfCustomData<I:RxIdentifiableType & Equatable> {
     var items: [I]
 }
 
@@ -94,49 +91,9 @@ extension SectionOfCustomData: AnimatableSectionModelType {
     }
 }
 
-extension SectionOfCustomData: IdentifiableType {
+extension SectionOfCustomData: RxIdentifiableType {
     var identity: Int {
         return 1
-    }
-}
-
-func sendDataToServer<T:Encodable>(value: T) -> Single<Void> {
-    let encoded: Data
-    do {
-        encoded = try JSONEncoder().encode(value)
-    } catch {
-        return Single.error(error)
-    }
-
-    var request = URLRequest(url: URL(string: "http://localhost:8081/shoppingItem")!)
-    request.httpBody = encoded
-    request.httpMethod = "POST"
-    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-    return Single.create { emitter in
-        let dataTask = URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
-                emitter(.error(error))
-                return
-            }
-
-            let response = response as! HTTPURLResponse
-
-            if 200...299 ~= response.statusCode {
-                emitter(.success(()))
-            } else {
-
-                var body: String = ""
-
-                if let data = data {
-                    body = String(data: data, encoding: .utf8) ?? ""
-                }
-
-                emitter(.error(HttpError.failure(body: body, statusCode: response.statusCode)))
-            }
-        }
-        dataTask.resume()
-        return Disposables.create { dataTask.cancel() }
     }
 }
 
@@ -160,8 +117,4 @@ public protocol ViewModelType {
     init(fromElement: T)
 
     var updatedElements: Observable<T> { get }
-}
-
-public protocol Identifyable {
-    var identifier: String { get }
 }
