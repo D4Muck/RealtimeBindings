@@ -33,12 +33,6 @@ public class RealtimeDataSource<T:Item> {
                         elements.append(value)
                     case .INITIAL:
                         elements.append(value)
-
-                        let mirror = Mirror(reflecting: element.value)
-                        mirror.children.forEach { child in
-                            print("\(child.label!): \(child.value)")
-                        }
-
                     case .DELETED:
                         elements = elements.filter {
                             $0.id != element.value.id

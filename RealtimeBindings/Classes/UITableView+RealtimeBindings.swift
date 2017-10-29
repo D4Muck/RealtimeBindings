@@ -22,7 +22,6 @@ extension UITableView {
             sortBy: ((T, T) -> Bool)? = nil,
             cellFactory: @escaping (UITableView, Int, V) -> UITableViewCell
     ) -> Disposable where V.T == T {
-
         let compositeDisposable = CompositeDisposable()
         let data = dataSource.changes(sortBy: sortBy)
                 .map { items -> [SectionOfCustomData<RxDataIdentifiableDelegate<V>>] in
@@ -50,20 +49,63 @@ extension UITableView {
 
 private extension UITableView {
 
-    class func createViewModel<T:Encodable, V:ViewModel>(
+    class func createViewModel<T:Codable, V:ViewModel>(
             from element: T,
             sendDataFunc: @escaping (T) -> Single<Void>,
             disposedBy: CompositeDisposable
     ) -> V where V.T == T {
         let viewModel = V.init(fromElement: element)
 
-        let disposable = viewModel.updatedElements
-                .flatMapLatest { sendDataFunc($0).catchError { _ in Single.just(()) } }
+        let disposable = UITableView.updatedElements(of: viewModel)
+                .flatMapLatest { element -> Single<Void> in
+                    return sendDataFunc(element)
+                }
+                .catchError { error in
+                    print(error)
+                    return Observable.just(())
+                }
                 .subscribe()
         _ = disposedBy.insert(disposable)
-
         return viewModel
     }
+
+    class func updatedElements<T:Decodable, V:ViewModelType>(
+            of model: V
+    ) -> Observable<T> {
+        let mirror = Mirror(reflecting: model)
+        var observables = [Observable<(String, Any)>]()
+        mirror.children.forEach { child in
+            let value = child.value
+            let o: Observable<Any>
+            switch (value) {
+            case let v as AnyTypeObservableConvertible: o = v.asAnyObservable()
+            default: o = Observable.never().startWith("")
+            }
+            observables.append(
+                    o.withLatestFrom(Observable.just(child.label!)) {
+                        return ($1, $0)
+                    }
+            )
+        }
+
+        return Observable.combineLatest(observables)
+                .skip(1)
+                .map { values in
+                    var dict: [String: Any] = [:]
+                    values.forEach { dict[parseLabel(from: $0.0)] = $0.1 }
+                    let decoder = MapDecoder()
+                    return try decoder.decode(T.self, from: dict)
+                }
+    }
+}
+
+public func parseLabel(from: String) -> String {
+    let suffix = "Property"
+    if from.hasSuffix(suffix) {
+        let suffixStart = from.index(from.endIndex, offsetBy: -1 * suffix.count)
+        return String(from.prefix(upTo: suffixStart))
+    }
+    return from
 }
 
 struct RxDataIdentifiableDelegate<T:IdentifiableType & Equatable>: RxIdentifiableType, Equatable {
@@ -115,6 +157,26 @@ public protocol ViewModelType {
     associatedtype T
 
     init(fromElement: T)
+}
 
-    var updatedElements: Observable<T> { get }
+public protocol AnyTypeObservableConvertible {
+    func asAnyObservable() -> Observable<Any>
+}
+
+extension Variable: AnyTypeObservableConvertible {
+    public func asAnyObservable() -> Observable<Any> {
+        return self.asObservable().map { $0 as Any }
+    }
+}
+
+extension Observable: AnyTypeObservableConvertible {
+    public func asAnyObservable() -> Observable<Any> {
+        return self.map { $0 as Any }
+    }
+}
+
+extension Driver: AnyTypeObservableConvertible {
+    public func asAnyObservable() -> Observable<Any> {
+        return self.asObservable().map { $0 as Any }
+    }
 }

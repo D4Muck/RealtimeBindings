@@ -79,21 +79,15 @@ extension UIViewController {
 }
 
 struct ShoppingItemViewModel: ViewModelType {
+
     let idProperty: Variable<String>
     let name: Variable<String>
     let bought: Variable<Bool>
-    private(set) var updatedElements: Observable<ShoppingItem>
 
     init(fromElement: ShoppingItem) {
         idProperty = Variable(fromElement.id)
         name = Variable(fromElement.name)
         bought = Variable(fromElement.bought)
-
-        updatedElements = Observable.combineLatest(
-                idProperty.asObservable().distinctUntilChanged(),
-                name.asObservable().distinctUntilChanged(),
-                bought.asObservable().distinctUntilChanged()
-        ) { (id, name, bought) in ShoppingItem(id: id, name: name, bought: bought) }.skip(1)
     }
 }
 
@@ -112,8 +106,8 @@ extension ShoppingItemViewModel: IdentifiableType {
 extension ShoppingItemViewModel: Equatable {
     static func ==(lhs: ShoppingItemViewModel, rhs: ShoppingItemViewModel) -> Bool {
         return lhs.idProperty.value == rhs.idProperty.value
-                && lhs.name.value == rhs.name.value
-                && lhs.bought.value == rhs.bought.value
+        && lhs.name.value == rhs.name.value
+        && lhs.bought.value == rhs.bought.value
     }
 }
 
@@ -130,8 +124,8 @@ struct ShoppingItem: Codable, CustomStringConvertible, IdentifiableType {
 extension ShoppingItem: Equatable {
     static func ==(lhs: ShoppingItem, rhs: ShoppingItem) -> Bool {
         return lhs.id == rhs.id
-                && lhs.name == rhs.name
-                && lhs.bought == rhs.bought
+        && lhs.name == rhs.name
+        && lhs.bought == rhs.bought
     }
 }
 
