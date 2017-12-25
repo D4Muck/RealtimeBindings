@@ -8,14 +8,14 @@ target 'RealtimeBindings_Example' do
   target 'RealtimeBindings_Tests' do
     inherit! :search_paths
 
-    pod 'Quick', '~> 1.0.0'
-    pod 'Nimble', '~> 5.1.1'
+    pod 'Quick', '~> 1.2.0'
+    pod 'Nimble', '~> 7.0.3'
     pod 'RxBlocking', '~> 4.0'
   end
   
   post_install do |installer|
       installer.pods_project.targets.each do |target|
-          if ['Quick', 'Nimble', 'M13Checkbox'].include? target.name
+          if ['M13Checkbox'].include? target.name
               target.build_configurations.each do |config|
                   config.build_settings['SWIFT_VERSION'] = '3.2'
               end
