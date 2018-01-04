@@ -1,6 +1,6 @@
 PODS:
   - BEMCheckBox (1.4.1)
-  - Differentiator (3.0.1)
+  - Differentiator (3.0.2)
   - M13Checkbox (3.1.3)
   - Nimble (7.0.3)
   - Quick (1.2.0)
@@ -8,15 +8,15 @@ PODS:
     - RxCocoa (~> 4.0)
     - RxDataSources (~> 3.0)
     - RxSwift (~> 4.0)
-  - RxBlocking (4.0.0):
+  - RxBlocking (4.1.0):
     - RxSwift (~> 4.0)
-  - RxCocoa (4.0.0):
+  - RxCocoa (4.1.0):
     - RxSwift (~> 4.0)
-  - RxDataSources (3.0.1):
+  - RxDataSources (3.0.2):
     - Differentiator (~> 3.0)
     - RxCocoa (~> 4.0)
     - RxSwift (~> 4.0)
-  - RxSwift (4.0.0)
+  - RxSwift (4.1.0)
 
 DEPENDENCIES:
   - BEMCheckBox (= 1.4.1)
@@ -32,15 +32,15 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   BEMCheckBox: 5ba6e37ade3d3657b36caecc35c8b75c6c2b1a4e
-  Differentiator: ffe513ce1ea4e7198b89fac94d6e281c673055a9
+  Differentiator: a87be69eba49ec4ab460c7671143ee3a9eececfd
   M13Checkbox: c132a7e0eb964731855eff67b883a0b21b7c0977
   Nimble: 7f5a9c447a33002645a071bddafbfb24ea70e0ac
   Quick: 58d203b1c5e27fff7229c4c1ae445ad7069a7a08
   RealtimeBindings: b1d4d4a0e512962585f6d17571cbfdf9a66ca15f
-  RxBlocking: 923c2c8106d80d7c2d6b276afd66ce3b10824836
-  RxCocoa: d62846ca96495d862fa4c59ea7d87e5031d7340e
-  RxDataSources: 098b7e62b6316313b14d6bf594e3f4f4f62a238a
-  RxSwift: fd680d75283beb5e2559486f3c0ff852f0d35334
+  RxBlocking: 193d33fad26f00a4e60831481938486deaaaa200
+  RxCocoa: cc1fec49cdc8fabe645964de7c51c099a36c2aa8
+  RxDataSources: cb7c31e652a87ebb919da45f716bbb87b3765f6b
+  RxSwift: 4219941c1244c88002901bd87a69d3aea9ae71f0
 
 PODFILE CHECKSUM: 8b368c27b5627475ae7eefa64fecf158cb428d70
 

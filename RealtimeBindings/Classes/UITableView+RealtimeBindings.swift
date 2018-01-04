@@ -17,7 +17,7 @@ extension UITableView {
 
     public typealias ViewModel = ViewModelType & IdentifiableType & Equatable
 
-    public func observeChangesFrom<T, V:ViewModel>(
+    public func observeChangesFrom<T, V: ViewModel>(
             dataSource: RealtimeDataSource<T>,
             sortBy: ((T, T) -> Bool)? = nil,
             cellFactory: @escaping (UITableView, Int, V) -> UITableViewCell
@@ -34,13 +34,22 @@ extension UITableView {
                     return [SectionOfCustomData(items: viewModels)]
                 }
 
-        let dataSource = RxTableViewSectionedAnimatedDataSource<SectionOfCustomData<RxDataIdentifiableDelegate<V>>>(configureCell: {
+        let tableViewDataSource = RxTableViewSectionedAnimatedDataSource<SectionOfCustomData<RxDataIdentifiableDelegate<V>>>(configureCell: {
             (_, tableView, indexPath, elementDelegate: RxDataIdentifiableDelegate<V>) -> UITableViewCell in
             return cellFactory(tableView, indexPath.row, elementDelegate.element)
         }, canEditRowAtIndexPath: { _, _ in true })
 
 
-        let disposable = data.bind(to: self.rx.items(dataSource: dataSource))
+        var disposable: Disposable
+
+        disposable = data.bind(to: self.rx.items(dataSource: tableViewDataSource))
+        _ = compositeDisposable.insert(disposable)
+
+        disposable = self.rx.itemDeleted.asDriver().flatMapLatest { indexPath -> Driver<Void> in
+            let itemToDelete = tableViewDataSource[indexPath]
+            let id = itemToDelete.identity
+            return dataSource.deleteElement(withId: id).debug().asDriver(onErrorJustReturn: ())
+        }.drive()
         _ = compositeDisposable.insert(disposable)
 
         return compositeDisposable
@@ -49,7 +58,7 @@ extension UITableView {
 
 private extension UITableView {
 
-    class func createViewModel<T:Codable, V:ViewModel>(
+    class func createViewModel<T: Codable, V: ViewModel>(
             from element: T,
             sendDataFunc: @escaping (T) -> Single<Void>,
             disposedBy: CompositeDisposable
@@ -69,7 +78,7 @@ private extension UITableView {
         return viewModel
     }
 
-    class func updatedElements<T:Decodable, V:ViewModelType>(
+    class func updatedElements<T: Decodable, V: ViewModelType>(
             of model: V
     ) -> Observable<T> {
         let mirror = Mirror(reflecting: model)
@@ -108,7 +117,7 @@ public func parseLabel(from: String) -> String {
     return from
 }
 
-struct RxDataIdentifiableDelegate<T:IdentifiableType & Equatable>: RxIdentifiableType, Equatable {
+struct RxDataIdentifiableDelegate<T: IdentifiableType & Equatable>: RxIdentifiableType, Equatable {
 
     let element: T
 
@@ -121,7 +130,7 @@ struct RxDataIdentifiableDelegate<T:IdentifiableType & Equatable>: RxIdentifiabl
     }
 }
 
-struct SectionOfCustomData<I:RxIdentifiableType & Equatable> {
+struct SectionOfCustomData<I: RxIdentifiableType & Equatable> {
     var items: [I]
 }
 
@@ -147,7 +156,7 @@ enum ChangeEvent: String, Codable {
     case INITIAL, CREATED, DELETED, UPDATED
 }
 
-struct Change<T:Decodable>: Decodable {
+struct Change<T: Decodable>: Decodable {
     let value: T
     let event: ChangeEvent
 }

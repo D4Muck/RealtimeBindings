@@ -71,11 +71,13 @@
                         <viewLayoutGuide key="safeArea" id="nGz-lc-5rL"/>
                     </view>
                     <navigationItem key="navigationItem" title="Einkaufsliste" id="z3W-NF-Pxf">
+                        <barButtonItem key="leftBarButtonItem" systemItem="trash" id="Utz-fI-yyT"/>
                         <barButtonItem key="rightBarButtonItem" systemItem="add" id="y8u-Dd-nDI"/>
                     </navigationItem>
                     <connections>
                         <outlet property="addButton" destination="y8u-Dd-nDI" id="h6r-5C-gUz"/>
                         <outlet property="tableView" destination="tEd-oe-okO" id="7OQ-0x-96E"/>
+                        <outlet property="trashAllButton" destination="Utz-fI-yyT" id="NZk-1j-8kb"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="x5A-6p-PRh" sceneMemberID="firstResponder"/>

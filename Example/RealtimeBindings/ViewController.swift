@@ -15,6 +15,7 @@ class ViewController: UIViewController {
 
     @IBOutlet var tableView: UITableView!
     @IBOutlet var addButton: UIBarButtonItem!
+    @IBOutlet var trashAllButton: UIBarButtonItem!
 
     let disposeBag = DisposeBag()
     static let shoppingItemEndpoint = "http://localhost:8081/shoppingItem"
@@ -35,6 +36,10 @@ class ViewController: UIViewController {
             return cell
         }.disposed(by: disposeBag)
 
+        tableView.rx.itemDeleted.subscribe { elem in
+            print(elem)
+        }.disposed(by: disposeBag)
+
         addButton.rx.tap.asDriver()
                 .flatMapLatest { [weak self] _ -> Driver<String> in
                     guard let me = self else { return Driver.never() }
@@ -44,6 +49,12 @@ class ViewController: UIViewController {
                     return dataSource.saveElement(ShoppingItem(id: "", name: $0, bought: false))
                             .debug()
                             .asDriver(onErrorJustReturn: ())
+                }
+                .drive().disposed(by: disposeBag)
+
+        trashAllButton.rx.tap.asDriver()
+                .flatMapLatest {
+                    return dataSource.deleteAllElements().debug().asDriver(onErrorJustReturn: ())
                 }
                 .drive().disposed(by: disposeBag)
     }
@@ -106,8 +117,8 @@ extension ShoppingItemViewModel: IdentifiableType {
 extension ShoppingItemViewModel: Equatable {
     static func ==(lhs: ShoppingItemViewModel, rhs: ShoppingItemViewModel) -> Bool {
         return lhs.idProperty.value == rhs.idProperty.value
-        && lhs.name.value == rhs.name.value
-        && lhs.bought.value == rhs.bought.value
+                && lhs.name.value == rhs.name.value
+                && lhs.bought.value == rhs.bought.value
     }
 }
 
@@ -124,8 +135,8 @@ struct ShoppingItem: Codable, CustomStringConvertible, IdentifiableType {
 extension ShoppingItem: Equatable {
     static func ==(lhs: ShoppingItem, rhs: ShoppingItem) -> Bool {
         return lhs.id == rhs.id
-        && lhs.name == rhs.name
-        && lhs.bought == rhs.bought
+                && lhs.name == rhs.name
+                && lhs.bought == rhs.bought
     }
 }
 

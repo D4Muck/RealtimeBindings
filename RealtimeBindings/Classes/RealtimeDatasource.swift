@@ -7,7 +7,7 @@ import RxSwift
 
 public typealias Item = Codable & IdentifiableType
 
-public class RealtimeDataSource<T:Item> {
+public class RealtimeDataSource<T: Item> {
 
     let url: String
 
@@ -71,6 +71,68 @@ extension RealtimeDataSource {
         request.httpBody = encoded
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        return Single.create { emitter in
+            let dataTask = URLSession.shared.dataTask(with: request) { data, response, error in
+                if let error = error {
+                    emitter(.error(error))
+                    return
+                }
+
+                let response = response as! HTTPURLResponse
+
+                if 200...299 ~= response.statusCode {
+                    emitter(.success(()))
+                } else {
+
+                    var body: String = ""
+
+                    if let data = data {
+                        body = String(data: data, encoding: .utf8) ?? ""
+                    }
+
+                    emitter(.error(HttpError.failure(body: body, statusCode: response.statusCode)))
+                }
+            }
+            dataTask.resume()
+            return Disposables.create { dataTask.cancel() }
+        }
+    }
+
+    public func deleteElement(withId id: String) -> Single<Void> {
+        var request = URLRequest(url: URL(string: url + "/" + id)!)
+        request.httpMethod = "DELETE"
+
+        return Single.create { emitter in
+            let dataTask = URLSession.shared.dataTask(with: request) { data, response, error in
+                if let error = error {
+                    emitter(.error(error))
+                    return
+                }
+
+                let response = response as! HTTPURLResponse
+
+                if 200...299 ~= response.statusCode {
+                    emitter(.success(()))
+                } else {
+
+                    var body: String = ""
+
+                    if let data = data {
+                        body = String(data: data, encoding: .utf8) ?? ""
+                    }
+
+                    emitter(.error(HttpError.failure(body: body, statusCode: response.statusCode)))
+                }
+            }
+            dataTask.resume()
+            return Disposables.create { dataTask.cancel() }
+        }
+    }
+
+    public func deleteAllElements() -> Single<Void> {
+        var request = URLRequest(url: URL(string: url)!)
+        request.httpMethod = "DELETE"
 
         return Single.create { emitter in
             let dataTask = URLSession.shared.dataTask(with: request) { data, response, error in
