@@ -19,30 +19,33 @@ public class RealtimeDataSource<T: Item> {
             sortBy: ((T, T) -> Bool)? = nil
     ) -> Observable<[T]> {
         return SSEURLSession.instance.request(url: url + "/changes")
-                .map { (str: String) -> Change<T> in
-                    return try! JSONDecoder().decode(Change<T>.self, from: str.data(using: .utf8)!)
+                .map { (str: String) -> [Change<T>] in
+                    return try! JSONDecoder().decode([Change<T>].self, from: str.data(using: .utf8)!)
                 }
-                .scan([]) { (arr: [T], element: Change<T>) -> [T] in
-
+                .buffer(timeSpan: 0.1, count: 1000, scheduler: MainScheduler.instance)
+                .filter { $0.count > 0 }
+                .map { return $0.flatMap { return $0 } }
+                .scan([]) { (arr: [T], changes: [Change<T>]) -> [T] in
                     var elements = arr
-                    let value = element.value
+                    changes.forEach { element in
+                        let value = element.value
 
-                    switch element.event {
-                    case .CREATED:
-                        elements.append(value)
-                    case .INITIAL:
-                        elements.append(value)
-                    case .DELETED:
-                        elements = elements.filter {
-                            $0.id != element.value.id
-                        }
-
-                    case .UPDATED:
-                        elements = elements.map {
-                            if ($0.id == element.value.id) {
-                                return value
-                            } else {
-                                return $0
+                        switch element.event {
+                        case .CREATED:
+                            elements.append(value)
+                        case .INITIAL:
+                            elements.append(value)
+                        case .DELETED:
+                            elements = elements.filter {
+                                $0.id != element.value.id
+                            }
+                        case .UPDATED:
+                            elements = elements.map {
+                                if ($0.id == element.value.id) {
+                                    return value
+                                } else {
+                                    return $0
+                                }
                             }
                         }
                     }

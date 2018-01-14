@@ -54,7 +54,7 @@ class ViewController: UIViewController {
 
         trashAllButton.rx.tap.asDriver()
                 .flatMapLatest {
-                    return dataSource.deleteAllElements().debug().asDriver(onErrorJustReturn: ())
+                    return dataSource.deleteAllElements().asDriver(onErrorJustReturn: ())
                 }
                 .drive().disposed(by: disposeBag)
     }
