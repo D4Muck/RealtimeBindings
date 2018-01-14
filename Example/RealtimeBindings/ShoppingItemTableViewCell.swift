@@ -31,9 +31,7 @@ class ShoppingItemTableViewCell: UITableViewCell {
                 self?.backgroundColor = bought ? UIColor.lightGray : nil
             }).disposed(by: disposeBag)
 
-            self.backgroundColor = .lightGray
-
-            checkbox.rx.checkState.asDriver().drive(item.bought).disposed(by: disposeBag)
+            checkbox.rx.checkState.asDriver().skip(1).drive(item.bought).disposed(by: disposeBag)
         }
     }
 }

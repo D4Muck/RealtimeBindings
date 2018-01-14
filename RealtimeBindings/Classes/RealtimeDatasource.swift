@@ -19,7 +19,6 @@ public class RealtimeDataSource<T: Item> {
             sortBy: ((T, T) -> Bool)? = nil
     ) -> Observable<[T]> {
         return SSEURLSession.instance.request(url: url + "/changes")
-                .do(onNext: { print($0) })
                 .map { (str: String) -> Change<T> in
                     return try! JSONDecoder().decode(Change<T>.self, from: str.data(using: .utf8)!)
                 }
